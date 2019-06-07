@@ -1,0 +1,38 @@
+#!/bin/bash
+#Sort the users from united states and non united states users based on LDAP group
+
+USERS="trouble_users_0419"
+USGROUPS="usgroups.csv"
+#NONUSGROUPS="nonusgroups.csv"
+
+printf "This script will sort the users of Non US and US groups\n"
+
+#if [ $# -ne 3 ]; then
+#	echo "There need to be three arguments, do better"
+#	exit 1
+#fi
+
+#Seperate by comma for our csv
+IFS=','
+
+#Loop through US group
+for usg in $(cat "$USGROUPS"); do
+	GDN=$( ldapsearch -x -h ldapvip -LLL -s sub -b o=nmdp.org,o=nmdp.org cn="${usg}" dn | awk '$1 ~ /dn:/ { print $0 }' | sed 's/dn: //' )
+	echo "----------"
+	printf "${GDN}\n"
+	echo "----------"
+	printf "\n"
+		#Begin loop through users
+		for u in $(cat "$USERS"); do	
+			#TV=$(ldapsearch -x -h ldapvip -LLL -s sub -b o=nmdp.org,o=nmdp.org cn="${usg}" uniqueMember | grep $user)	
+	
+			TV=$( ldapsearch -o ldif-wrap=no -LLL -x -b "o=nmdp.org,o=nmdp.org" -H ldap://ldapvip.nmdp.org "cn=$usg" uniqueMember | awk -F, '{print $1}' | sed -e '/^$/d' -e 's/uniqueMember: uid=//g' | grep $u )
+			
+			echo "Checking user " $u	
+			#printf "\n"
+			echo $TV, >> test.txt	
+			#printf "\n"
+
+		done			
+done
+
